@@ -120,7 +120,8 @@ def run_demon(imgs, csvs, masks, lst):
 
 # same as above demons registration but using ImageRegistrationMethod
 # also able to accept a mask image to be used when doing metric calculation
-def run_register(imgs, csvs, masks, lst):
+def run_register(imgs, csvs, masks, lst, output_path):
+    has_mask = masks is not None
     cnt = 0
     for i in lst:
         i = i - 1
@@ -155,8 +156,8 @@ def run_register(imgs, csvs, masks, lst):
         # Set up the Demons registration
         registration = sitk.ImageRegistrationMethod()
         registration.SetMetricAsDemons()
-        # registration.SetMetricFixedMask(mask_image)  # if you have a mask
-        registration.SetMetricMovingMask(masks[cnt])  # if you have a mask
+        if has_mask:
+            registration.SetMetricMovingMask(masks[cnt])  # if you have a mask
         registration.SetInitialTransform(displacement_transform)
         # registration.SetGaussianSmoothingVarianceForTheUpdateField(1.0)
         registration.SetOptimizerAsGradientDescent(
@@ -209,9 +210,7 @@ def run_register(imgs, csvs, masks, lst):
         ]
 
         # write out transformed landmarks to csv
-        output_csv_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/csv/transformed_landmarks_{}.csv".format(
-            i + 1
-        )
+        output_csv_path = output_path + "csv/transformed_landmarks_{}.csv".format(i + 1)
         header = ["Landmark", "X", "Y", "Z"]
 
         with open(output_csv_path, "w", newline="") as csvfile:
@@ -224,8 +223,8 @@ def run_register(imgs, csvs, masks, lst):
         print(f"Transformed landmark points saved to {output_csv_path}")
 
         # Save the registered image to a file
-        registered_image_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/img_results/registered_image_{}.nii.gz".format(
-            i + 1
+        registered_image_path = (
+            output_path + "img_results/registered_image_{}.nii.gz".format(i + 1)
         )
         sitk.WriteImage(registered_image, registered_image_path)
         print(f"Registered image saved to {registered_image_path}")
@@ -235,13 +234,19 @@ def run_register(imgs, csvs, masks, lst):
 
 if __name__ == "__main__":
     # find all csvs and imgs files in our dataset folder
-    csvs = list_csv_files_recursive("./BratsReg_Training_Data_v3")
-    imgs = list_img_files_recursive("./BratsReg_Training_Data_v3")
+    dataset_path = "./BratsReg_Training_Data_v3"
+    output_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/"
+    csvs = list_csv_files_recursive(dataset_path)
+    imgs = list_img_files_recursive(dataset_path)
 
     # specify interested images' index
+    # default are those ten which has masks produced
     lst = [2, 4, 5, 10, 12, 16, 22, 24, 29, 67]
+    masks = None
+
+    #####----- comment following out if you want to run without masks
     mask_names = ["./masks/mask_{}.nii.gz".format(i) for i in lst]
     masks = [sitk.ReadImage(names) for names in mask_names]
 
     # run demons registration
-    run_register(imgs, csvs, masks, lst)
+    run_register(imgs, csvs, masks, lst, output_path)
