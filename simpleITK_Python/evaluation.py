@@ -2,6 +2,7 @@ import os
 import numpy as np
 
 
+# find all csv in a folder
 def list_csv_files_recursive(folder_path):
     csv_files = []
     for foldername, subfolder, filenames in os.walk(folder_path):
@@ -16,6 +17,7 @@ def list_csv_files_recursive(folder_path):
     return csv_files
 
 
+# read in csv and clean up landmarks data
 def readCSV(path):
     """
     This function reads the CSV file and returns a list of lists
@@ -79,13 +81,10 @@ if __name__ == "__main__":
     print(results_csv)
 
     # calculate MAE for each pair of csv files
-
     result = [calcMedianAE(f, f_h) for f, f_h in zip(target_csv, results_csv)]
     sum = 0
     for r in result:
         sum += r
+    # avg & overall result
     print(sum / 10)
     print(result)
-
-    # print the result
-    # print(result)

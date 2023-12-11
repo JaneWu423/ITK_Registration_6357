@@ -5,6 +5,7 @@ import numpy as np
 import os
 
 
+# find all csv in a folder
 def list_csv_files_recursive(folder_path):
     csv_files = []
     for foldername, subfolder, filenames in os.walk(folder_path):
@@ -19,11 +20,13 @@ def list_csv_files_recursive(folder_path):
     return csv_files
 
 
+# find all img in a folder
 def list_img_files_recursive(folder_path):
     img_files = []
     for foldername, subfolder, filenames in os.walk(folder_path):
         temp_img = []
         for filename in filenames:
+            # find the t1ce images only
             if filename.endswith("t1ce.nii.gz"):
                 temp_img.append(os.path.join(foldername, filename))
         if len(temp_img) == 2:
@@ -34,6 +37,12 @@ def list_img_files_recursive(folder_path):
     return img_files
 
 
+# run the demons registration without using ImageRegistrationMethod
+# this is the same as the other run_register function
+# but this one is using older demons registration method calls
+
+
+# problem: can not apply tumor mask...
 def run_demon(imgs, csvs, masks, lst):
     cnt = 0
     for i in lst:
@@ -52,15 +61,11 @@ def run_demon(imgs, csvs, masks, lst):
         matcher.ThresholdAtMeanIntensityOn()
         moving = matcher.Execute(moving, fixed)
 
-        # The basic Demons Registration Filter
-        # Note there is a whole family of Demons Registration algorithms included in
-        # SimpleITK
         demons = sitk.DemonsRegistrationFilter()
         demons.SetNumberOfIterations(50)
-        # Standard deviation for Gaussian smoothing of displacement field
+
+        # std dev for Gaussian smoothing of displacement field
         demons.SetStandardDeviations(1.0)
-        # demons.SetMetricMovingMask(masks[cnt])
-        # demons.SetMaskImage(masks[cnt])
 
         demons.AddCommand(sitk.sitkIterationEvent, lambda: command_iteration(demons))
 
@@ -74,17 +79,15 @@ def run_demon(imgs, csvs, masks, lst):
         input_csv_path = csvs[i][0]
 
         landmark_points = []
+        # read in csv file and store the points in a list
         with open(input_csv_path, "r") as csvfile:
             csvreader = csv.reader(csvfile)
-            header = next(csvreader)  # Skip the header
+            header = next(csvreader)
             landmark_points = [
                 [float(row[1]), float(row[2]), float(row[3])] for row in csvreader
             ]
         for pts in landmark_points:
             print("Base Landmarks", pts)
-
-        # Convert NumPy array to SimpleITK points
-        # landmark_points_sitk = [sitk.Point(*point) for point in landmark_points]
 
         # Apply the transformation to each point
         transformed_landmark_points_sitk = [
@@ -98,10 +101,7 @@ def run_demon(imgs, csvs, masks, lst):
             [point[0], point[1], point[2]] for point in transformed_landmark_points_sitk
         ]
 
-        # Print or use the transformed landmark points as needed
-        # print("Original Landmark Points:\n", landmark_points)
-        # print("Transformed Landmark Points:\n", transformed_landmark_points_arr)
-
+        # write out transform landmarks to csv
         output_csv_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/csv1/transformed_landmarks_{}.csv".format(
             i + 1
         )
@@ -115,21 +115,11 @@ def run_demon(imgs, csvs, masks, lst):
                 csvwriter.writerow([j, point[0], point[1], point[2]])
 
         print(f"Transformed landmark points saved to {output_csv_path}")
-
-        # Save the transform to a file
-        # transform_path = "/Users/janewu/Downloads/2023fall/6357/"
-        # sitk.WriteTransform(transform, transform_path)
-
-        # Save the registered image to a file
-        # registered_image_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/img_results1/registered_image_{}.nii.gz".format(
-        #     i + 1
-        # )
-        # sitk.WriteImage(registered_image, registered_image_path)
-        # print(f"Registered image saved to {registered_image_path}")
-
         cnt += 1
 
 
+# same as above demons registration but using ImageRegistrationMethod
+# also able to accept a mask image to be used when doing metric calculation
 def run_register(imgs, csvs, masks, lst):
     cnt = 0
     for i in lst:
@@ -151,23 +141,16 @@ def run_register(imgs, csvs, masks, lst):
         matcher.ThresholdAtMeanIntensityOn()
         moving_image = matcher.Execute(moving_image, fixed_image)
 
-        # The basic Demons Registration Filter
-
-        # Check image types
-
         size = fixed_image.GetSize()
 
         # Create a displacement field with the same size as the fixed image
-        displacement_size = list(size)  # Adding 3 for the 3D vector components
+        displacement_size = list(size)
         displacement = sitk.Image(displacement_size, sitk.sitkVectorFloat64)
         displacement.SetSpacing(fixed_image.GetSpacing())
         displacement.SetOrigin(fixed_image.GetOrigin())
         displacement.SetDirection(fixed_image.GetDirection())
         # Set up the displacement field transform
         displacement_transform = sitk.DisplacementFieldTransform(displacement)
-
-        # Set the spacing of the displacement field
-        # displacement.SetSpacing(spacing)
 
         # Set up the Demons registration
         registration = sitk.ImageRegistrationMethod()
@@ -181,16 +164,10 @@ def run_register(imgs, csvs, masks, lst):
             numberOfIterations=50,
         )
 
-        # registration.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
-        # registration.SetSmoothingSigmasPerLevel(smoothingSigmas=[2, 1, 0])
-
         registration.SetInitialTransform(displacement_transform)
 
         print("Before Execute Registration")
 
-        # registration.AddCommand(
-        #     sitk.sitkIterationEvent, lambda: command_iteration(registration)
-        # )
         transform = registration.Execute(fixed_image, moving_image)
         print("After Execute Registration")
 
@@ -218,9 +195,6 @@ def run_register(imgs, csvs, masks, lst):
         for pts in landmark_points:
             print(pts)
 
-        # Convert NumPy array to SimpleITK points
-        # landmark_points_sitk = [sitk.Point(*point) for point in landmark_points]
-
         # Apply the transformation to each point
         transformed_landmark_points_sitk = [
             transform.TransformPoint(point) for point in landmark_points
@@ -234,10 +208,7 @@ def run_register(imgs, csvs, masks, lst):
             [point[0], point[1], point[2]] for point in transformed_landmark_points_sitk
         ]
 
-        # Print or use the transformed landmark points as needed
-        # print("Original Landmark Points:\n", landmark_points)
-        # print("Transformed Landmark Points:\n", transformed_landmark_points_arr)
-
+        # write out transformed landmarks to csv
         output_csv_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/csv/transformed_landmarks_{}.csv".format(
             i + 1
         )
@@ -252,10 +223,6 @@ def run_register(imgs, csvs, masks, lst):
 
         print(f"Transformed landmark points saved to {output_csv_path}")
 
-        # Save the transform to a file
-        # transform_path = "/Users/janewu/Downloads/2023fall/6357/"
-        # sitk.WriteTransform(transform, transform_path)
-
         # Save the registered image to a file
         registered_image_path = "/Users/janewu/Downloads/2023fall/6357/BraTSReg_Training_Data_v3/img_results/registered_image_{}.nii.gz".format(
             i + 1
@@ -267,14 +234,14 @@ def run_register(imgs, csvs, masks, lst):
 
 
 if __name__ == "__main__":
+    # find all csvs and imgs files in our dataset folder
     csvs = list_csv_files_recursive("./BratsReg_Training_Data_v3")
     imgs = list_img_files_recursive("./BratsReg_Training_Data_v3")
+
+    # specify interested images' index
     lst = [2, 4, 5, 10, 12, 16, 22, 24, 29, 67]
     mask_names = ["./masks/mask_{}.nii.gz".format(i) for i in lst]
     masks = [sitk.ReadImage(names) for names in mask_names]
-    # print(imgs)
-    # list = [2, 4, 5, 10, 12, 16, 22, 24, 29, 67]
-    # lst = [67]
-    # run_register(imgs, csvs, masks, lst)
+
+    # run demons registration
     run_register(imgs, csvs, masks, lst)
-    # print(csv)
