@@ -10,3 +10,5 @@ ITK-C++:
 Python:
 - Without mask: Go into the registration.py file and change the output path to your desired path. Also you may need to install the SimpleITK package. Place the dataset at the same level as the python file for it to properly read inputs. After the paths are set, simply run `python registration.py` in your terminal at the python folder level. Outputs will go to your specified path.
 - With mask: If want to test with produced tumor masks, you should not change any of the default image indices since they are the only ones that have masks already generated. Other steps are the same.
+
+Link to presentation slides about this project if you are interested: [Slides](https://docs.google.com/presentation/d/1f_1T9nse-7tONWpjenIg4xz3355Hxe0Z8OnHtK9y_VE/edit?usp=sharing)
