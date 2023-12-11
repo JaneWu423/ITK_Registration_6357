@@ -7,7 +7,7 @@ ITK-C++:
 - With/Without mask: Make a build folder the same level as the src folder, then `cmake ../src`, and `make`, to build the executable.
 - Once executable built, you can simple type `./RegistrationITK1 inputMovingImageFile inputFixedImageFile segImageFile outputRegisteredMovingImageFile`
 
-Python:
+SimpleITK-Python:
 - Without mask: Go into the registration.py file and change the output path to your desired path. Also you may need to install the SimpleITK package. Place the dataset at the same level as the python file for it to properly read inputs. After the paths are set, simply run `python registration.py` in your terminal at the python folder level. Outputs will go to your specified path.
 - With mask: If want to test with produced tumor masks, you should not change any of the default image indices since they are the only ones that have masks already generated. Other steps are the same.
 
