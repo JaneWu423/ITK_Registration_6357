@@ -1,0 +1,3 @@
+/Users/summerwang/Documents/BraTSRegITK/CMakeFiles/RegistrationITK.dir
+/Users/summerwang/Documents/BraTSRegITK/CMakeFiles/edit_cache.dir
+/Users/summerwang/Documents/BraTSRegITK/CMakeFiles/rebuild_cache.dir
